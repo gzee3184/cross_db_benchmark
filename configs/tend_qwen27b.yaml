@@ -1,0 +1,32 @@
+# Shipped Full-Stack Best Configuration for TEND (MongoDB)
+# Validated Official EXC: 32.23% (390 / 1,210 dev), 99.1% discovery rate, 7,136 tokens/query, 21.4s/query.
+backend: mongodb
+dataset: tend
+concurrency: 8
+model: Qwen/Qwen3.6-27B-FP8
+timeout_ms: 15000
+
+# Schema Discovery & Reranking
+discovery:
+  mode: hybrid                    # Dense embedding + BM25 keyword search
+  hybrid_alpha: 0.75              # 75% dense embedding, 25% lexical BM25
+  embedding_model: Qwen/Qwen3-Embedding-0.6B
+  rerank_discovery: true          # LLM selection over top-3 candidate collections
+  new_collection_card: true       # Budget-aware card with distinguishing schema fields
+  drop_scaffolding: true          # Drop empty or migration scaffolding collections
+  rerank_bucket_hint: true        # Fix 2: collection card sizing & bucket hints
+
+# Prompt Construction
+prompt:
+  value_hints: true               # Sample 4 real document values for top text fields (+0.0218 subset-EXC)
+  id_identifier_hint: true        # Direct rule preferring document _id over nested id
+  dynamic_key_omission_hint: true # Fix 3: guidance for polymorphic/dynamic keys
+
+# Refinement & Gating
+refinement:
+  mode: gated_retry               # Single-shot retry (agent-loop rejected: -5.5pp worse at N=220)
+  refine_gate: true               # Trigger only on runtime error, 0 rows, or id mismatch
+  feedback:
+    include_runtime_error: true   # Pass raw MQL exception string
+    include_observed_values: true # Pass real sampled values on 0 rows
+

@@ -1,0 +1,36 @@
+# Shipped Ensemble Best Configuration for BIRD (SQLite)
+# Validated Official EX: 63.88% (840 / 1,315 dev), ~16,440 tokens/query, 42.1s/query.
+backend: sqlite
+dataset: bird
+split: all
+concurrency: 8
+model: Qwen/Qwen3.6-27B-FP8
+timeout_sec: 30
+
+# Schema Discovery
+discovery:
+  mode: kg_adaptive
+  bird_only_discovery: true       # Restrict pool to 75 target BIRD collections
+  property_match_rerank: true     # Weight 0.15 on lexical question overlap
+  value_stats_boost: true         # Literal match against known column stats
+  describe_column_tool: true      # On-demand column threshold/stats tool (w3b)
+
+# Dual Generation & Arbitration
+generation:
+  tool_schema: v2                 # Typed relational Intermediate Representation (IR)
+  dual_candidate: true            # Generate structured IR + free-text reference SQL
+  disable_thinking: true          # LM_DISABLE_THINKING=1 (low variance, avoids runaway)
+  temperature: 0.1
+  max_output_tokens: 1500
+
+# Execution Arbitration & Gating
+arbitration:
+  cross_execution: true           # Execute both representations on live database
+  disagree_prefer_reference: true # Arbitration rule on disagreement
+
+# Refinement Loop
+refinement:
+  refine_gate: true               # LM_REFINE_GATE=1: trigger only on hard errors/0 rows
+  max_rounds: 2                   # Bounded turn budget
+  shape_critique: true            # Check expected column count from task understanding
+
