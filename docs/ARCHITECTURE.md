@@ -369,21 +369,31 @@ db.loans.aggregate([
 
 ---
 
-## 3. The Representational Boundary
+## 3. Key Differences Between Pipelines
 
-The engine demonstrates a structural divergence between relational and document database targets:
+The table below summarizes the technical differences between the relational and document pipelines:
 
-| Architectural Dimension | Relational Pipeline (SQLite / BIRD) | Document Pipeline (MongoDB / TEND) |
+| Feature | Relational Pipeline (SQLite / BIRD) | Document Pipeline (MongoDB / TEND) |
 |---|---|---|
 | **Target Query Language** | SQLite SQL | MongoDB Aggregation Pipelines (MQL) |
-| **Schema Grounding** | Static DDL and Schema Knowledge Graph | Runtime Dynamic Document Sampling |
-| **Intermediate Representation** | Flat Typed Relational IR (`RelationalQueryArgs`) | Direct MQL AST Generation |
-| **Discovery Accuracy** | 99.5%+ | 99.1% |
-| **Benchmark Accuracy** | **64.67% EX** (992 / 1,534) | **32.23% EXC** (390 / 1,210) |
-| **Dominant Failure Channel** | Reasoning on ambiguous filters (25.4%) | Nested value distortions (`$unwind` / `$group`) (55.5%) |
-| **Refinement Strategy** | Multi-Turn Bounded Loop (2 rounds, 6 tools) | Single-Shot Gated Retry (1 retry) |
+| **Schema Grounding** | Static DDL and Schema Knowledge Graph | Dynamic Runtime Document Sampling |
+| **Query Representation** | Typed Relational JSON IR (`RelationalQueryArgs`) | Native MQL Pipeline Specification |
+| **Query Compilation** | Deterministic Python Compiler | Direct AST Generation |
+| **Structural Complexity** | Flat Rectangular Tables with Foreign Keys | Nested Documents, Arrays, and Sub-Objects |
+| **Discovery Accuracy** | 99.5%+ Collection Recall | 99.1% Collection Recall |
+| **Benchmark Accuracy** | 64.67% EX (992 / 1,534) | 32.23% EXC (390 / 1,210) |
+| **Frequent Error Source** | Ambiguous Natural Language Filters (25.4%) | Nested Array Operations (`$unwind`, `$group`) (55.5%) |
+| **Refinement Mechanism** | Bounded Multi-Turn Loop (2 rounds, 6 tools) | Single-Shot Gated Retry (1 retry with error text) |
 
-### Why Relational IR Fails on Document Pipelines
-1. **Relational Invariance**: SQL operations operate on flat tables with fixed rectangular outputs. A single-level tool call (`SELECT`, `FROM`, `WHERE`, `JOIN`) represents 100% of standard SQL constructs.
-2. **Document Pipeline Tree Transformations**: MongoDB queries require tree restructuring (`$unwind`, `$lookup`, `$facet`, `$objectToArray`). In TEND, 86.3% of queries require at least 1 pipeline stage that cannot be represented in flat function-calling arguments.
-3. **The Boundary Rule**: When query transformations require structural tree reshaping, flat function-call IR creates representation collapse. Native query generation combined with single-shot gated retry is required.
+### 3.1 Schema Grounding and Discovery
+* **Relational**: Schemas contain predefined tables and columns declared in DDL files. The pipeline uses dense embeddings and a 588-edge knowledge graph to resolve foreign-key paths between tables.
+* **Document**: Schemas lack DDL definitions. The pipeline samples 8 real documents per collection up to depth 14 to construct dynamic field cards, then fuses dense retrieval (0.75) and BM25 lexical matching (0.25).
+
+### 3.2 Query Representation and Compilation
+* **Relational**: The model generates a single-level typed JSON IR. A deterministic compiler translates this IR into dialect SQL without additional model calls. Division operators receive automatic `CAST(x AS REAL)` casts, and string comparisons receive `COLLATE NOCASE`.
+* **Document**: Queries require multi-stage array transformations (`$unwind`, `$lookup`, `$group`, `$project`). The model emits native MQL pipeline arrays directly.
+
+### 3.3 Execution and Refinement
+* **Relational**: The model generates both a JSON IR and a Reference SQL query. Both execute against live SQLite databases. If results diverge or trigger gate conditions (error, 0 rows, bad shape), the engine enters a 2-round repair loop with 6 read-only diagnostic tools.
+* **Document**: The query executes against live MongoDB with a 15-second timeout. If execution fails, returns 0 documents, or uses incorrect identifiers, the engine executes exactly 1 retry with database feedback.
+
