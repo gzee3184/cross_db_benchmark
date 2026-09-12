@@ -12,14 +12,12 @@ The CrossDB benchmark engine evaluates natural language to database query genera
 
 ```mermaid
 flowchart TD
-    Q["Question + Evidence Hint"] --> DISCO["Module 1: Schema Discovery and Knowledge Graph"]
+    Q["Question and Evidence Hint"] --> DISCO["Module 1: Schema Discovery and Knowledge Graph"]
     DISCO --> TU["Module 2: Task Understanding and Shape Prediction"]
     TU --> GEN["Module 3: Dual-Representation Generator"]
     
-    subgraph DualRepresentation["Dual Representation Generation"]
-        GEN -->|Branch A| IR["Typed Relational JSON IR"]
-        GEN -->|Branch B| REFSQ["Free-Text Reference SQL"]
-    end
+    GEN --> IR["Branch A: Typed Relational JSON IR"]
+    GEN --> REFSQ["Branch B: Free-Text Reference SQL"]
 
     IR --> COMP["Module 4: Deterministic Relational Compiler"]
     COMP --> SQL1["Compiled SQLite SQL Query"]
@@ -33,8 +31,8 @@ flowchart TD
     ARB --> DRAFT["Arbitrated Query Candidate"]
     DRAFT --> GATE{"Module 6: Refinement Gate"}
 
-    GATE -->|"Pass (90.2% queries)"| FINAL["Final Output SQL"]
-    GATE -->|"Trigger (9.8% queries)"| REFLOOP["Bounded Multi-Turn Refinement Loop"]
+    GATE -->|Pass: Clean 90.2 percent| FINAL["Final Output SQL"]
+    GATE -->|Trigger: Error or Empty 9.8 percent| REFLOOP["Bounded Multi-Turn Refinement Loop"]
     REFLOOP --> FINAL
 ```
 
@@ -221,16 +219,16 @@ WHERE T1.`County` = 'Fresno' COLLATE NOCASE
 ```mermaid
 flowchart TD
     Q["Natural Language Question"] --> INTRO["Module 1: Document Schema Introspection"]
-    INTRO --> HYBRID["Module 2: Hybrid Discovery (Dense + BM25)"]
-    HYBRID --> RERANK["Module 3: Top-3 LLM Reranking & Prompt Assembly"]
+    INTRO --> HYBRID["Module 2: Hybrid Discovery with Dense and BM25"]
+    HYBRID --> RERANK["Module 3: Top-3 LLM Reranking and Prompt Assembly"]
     RERANK --> GEN["Module 4: Native MQL Pipeline Generation"]
-    GEN --> EXEC["Module 5: PyMongo Execution (15s Timeout)"]
+    GEN --> EXEC["Module 5: PyMongo Execution with 15s Timeout"]
     EXEC --> RETRY{"Module 6: Gated Retry Engine"}
     
-    RETRY -->|"Pass (Clean execution)"| SCORER["Module 7: Set-Based Output Evaluator"]
-    RETRY -->|"Fail (Error / 0 rows / ID mismatch)"| REGEN["1-Shot Retry with Feedback"]
+    RETRY -->|Pass: Clean Execution| SCORER["Module 7: Set-Based Output Evaluator"]
+    RETRY -->|Fail: Error or Zero Rows| REGEN["1-Shot Retry with Feedback"]
     REGEN --> SCORER
-    SCORER --> OUT["Official EXC / EXF1 Metric Result"]
+    SCORER --> OUT["Official EXC and EXF1 Metric Result"]
 ```
 
 ---
