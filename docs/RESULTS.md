@@ -47,19 +47,20 @@ All 8 architectural discovery configurations evaluated across all 1,534 BIRD dev
 
 ---
 
-## 3. End-to-End Generation & Translation Ablations ($N=1,315$)
+## 3. End-to-End Generation & Architectural Ablations
 
-Evaluated on the test split queries of the BIRD development benchmark:
+Evaluated across the BIRD development benchmark (full $N=1,534$ dev set for structural routing ablations and $N=1,315$ test split for generation baseline sweeps):
 
-| Ablation Configuration | Execution Accuracy (EX) | Execution Crashes | Latency / Query | Token Factor | Architectural Finding |
+| Ablation Configuration | Evaluated $N$ | Execution Accuracy (EX) | Execution Crashes | Latency / Query | Architectural Finding |
 |---|---:|---:|---:|---:|---|
-| **1. Direct SQL (No IR)** | **44.71%** (588 / 1,315) | 344 (26.16%) | ~3.2s | 0.21x | Open-weight models suffer severe syntax collapse |
-| **2. No Knowledge Graph (`--no-kg`)** | **51.34%** (787 / 1,533) | 243 (15.85%) | 23.8s | 0.98x | Schema retrieval starvation drops multi-table join recall (-13.33pp) |
-| **3. No Value Catalog (`--no-values`)** | **52.77%** (809 / 1,533) | 215 (14.02%) | 23.5s | 0.98x | Loss of value statistics distorts column-literal alignment (-11.90pp) |
-| **4. Single-Candidate Base** | **62.60%** (823 / 1,315) | 3 (0.23%) | 40.7s | 0.95x | Deterministic IR compiler eliminates 99% of crashes (+17.89pp) |
-| **5. No Refinement Loop** | **63.80%** (839 / 1,315) | 21 (1.60%) | 38.5s | 0.92x | Gated refinement recovers targeted execution failures safely |
-| **6. Shipped Ensemble (Gated)** | **63.88%** (840 / 1,315) | 3 (0.23%) | 42.1s | 1.00x | Multi-candidate arbitration adds +1.28pp accuracy |
-| **7. Ungated Refinement** | **63.88%** (840 / 1,315) | 22 (1.67%) | 160.4s | 3.85x | 0.0pp gain; burns 3.85x compute without gating |
+| **Full Pipeline (Shipped Reference)** | 1,534 | **64.67%** (992 / 1,534) | 23 (1.50%) | 23.9s | Canonical multi-candidate compiled baseline |
+| **No Value Catalog (`--no-values`)** | 1,533 | **52.77%** (809 / 1,533) | 215 (14.02%) | 23.5s | Loss of value statistics distorts column-literal alignment (-11.90pp) |
+| **No Knowledge Graph (`--no-kg`)** | 1,533 | **51.34%** (787 / 1,533) | 243 (15.85%) | 23.8s | Schema retrieval starvation drops multi-table join recall (-13.33pp) |
+| **Direct SQL (No IR)** | 1,315 | **44.71%** (588 / 1,315) | 344 (26.16%) | ~3.2s | Open-weight models suffer severe syntax collapse (-19.96pp) |
+| **Single-Candidate Base** | 1,315 | **62.60%** (823 / 1,315) | 3 (0.23%) | 40.7s | Deterministic IR compiler eliminates 99% of crashes (+17.89pp) |
+| **No Refinement Loop** | 1,315 | **63.80%** (839 / 1,315) | 21 (1.60%) | 38.5s | Gated refinement recovers targeted execution failures safely |
+| **Shipped Ensemble (Gated)** | 1,315 | **63.88%** (840 / 1,315) | 3 (0.23%) | 42.1s | Multi-candidate arbitration adds +1.28pp accuracy |
+| **Ungated Refinement** | 1,315 | **63.88%** (840 / 1,315) | 22 (1.67%) | 160.4s | 0.0pp gain; burns 3.85x compute without gating |
 
 ---
 
