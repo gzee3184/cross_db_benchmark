@@ -22,5 +22,6 @@ echo "==========================================================================
 python3 -m crossdb.evaluate \
     --backend mongodb \
     --data-dir "$DATA_DIR" \
+    --mongo-uri "$MONGO_URI" \
     --concurrency "$CONCURRENCY" \
     --output-dir "$OUTPUT_DIR"

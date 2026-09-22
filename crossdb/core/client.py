@@ -5,9 +5,6 @@ Connects to any OpenAI-compatible server (vLLM, SGLang, NIM, or OpenAI).
 
 import os
 from typing import Any, Dict, List, Optional
-from openai import OpenAI
-
-
 class LLMClient:
     """Unified client for inference across open-weight and proprietary models."""
 
@@ -33,11 +30,22 @@ class LLMClient:
         self.model = model or os.environ.get("LM_MODEL", "default")
         self.timeout = timeout
 
-        self._client = OpenAI(
-            base_url=self.base_url,
-            api_key=self.api_key,
-            timeout=self.timeout,
-        )
+        try:
+            from openai import OpenAI
+            self._client = OpenAI(
+                base_url=self.base_url,
+                api_key=self.api_key,
+                timeout=self.timeout,
+            )
+        except ImportError:
+            self._client = None
+
+    def _ensure_client(self):
+        """Ensure openai client is initialized."""
+        if self._client is None:
+            raise ImportError(
+                "The 'openai' package is required for LLMClient. Install via: pip install openai"
+            )
 
     def generate(
         self,
@@ -57,6 +65,7 @@ class LLMClient:
         Returns:
             The model completion string.
         """
+        self._ensure_client()
         messages: List[Dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -89,6 +98,7 @@ class LLMClient:
         Returns:
             The parsed tool call arguments dictionary, or None if no call made.
         """
+        self._ensure_client()
         messages: List[Dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})

@@ -60,43 +60,63 @@ bash scripts/smoke_test.sh
 ## 5. Run Evaluations
 
 ### Relational Benchmark (BIRD / SQLite)
-Run the full BIRD benchmark:
+Run the full BIRD benchmark across all 1,534 development queries:
 ```bash
 export BIRD_DATA_DIR="/path/to/bird/data"
 export BIRD_DB_DIR="/path/to/bird/databases"
 
+# Run turnkey runner:
 bash scripts/run_bird.sh
+
+# Or invoke directly via Python CLI:
+python3 -m crossdb.evaluate --backend sqlite --data-dir "$BIRD_DATA_DIR" --db-dir "$BIRD_DB_DIR"
 ```
 
 ### Document Benchmark (TEND / MongoDB)
-Run the full TEND benchmark:
+Run the full TEND benchmark across all 1,210 queries:
 ```bash
 export TEND_DATA_DIR="/path/to/tend/data"
 export MONGO_URI="mongodb://localhost:27017"
 
+# Run turnkey runner:
 bash scripts/run_tend.sh
+
+# Or invoke directly via Python CLI:
+python3 -m crossdb.evaluate --backend mongodb --data-dir "$TEND_DATA_DIR" --mongo-uri "$MONGO_URI"
 ```
 
 ---
 
 ## 6. Run Ablation Studies
 
-Execute specific ablation configurations with command-line flags:
+Execute specific architectural and generation ablation configurations using command-line switches:
 
-1. **Direct SQL Generation (No IR)**:
-   ```bash
-   python3 -m crossdb.evaluate --backend sqlite --no-ir
-   ```
+### 6.1 Schema Discovery Routing Ablations
+```bash
+# Disable 588-edge Field Knowledge Graph:
+python3 -m crossdb.evaluate --backend sqlite --no-kg
 
-2. **No Refinement Loop (Single-Turn)**:
-   ```bash
-   python3 -m crossdb.evaluate --backend sqlite --no-refine
-   ```
+# Disable value catalog statistics matching:
+python3 -m crossdb.evaluate --backend sqlite --no-values
 
-3. **Ungated Refinement (Unconditional Multi-Turn)**:
-   ```bash
-   python3 -m crossdb.evaluate --backend sqlite --ungated
-   ```
+# Disable adaptive depth routing and property reranking (flat top-K):
+python3 -m crossdb.evaluate --backend sqlite --no-adaptive --no-rerank
+
+# Disable dense semantic embeddings (pure lexical discovery):
+python3 -m crossdb.evaluate --backend sqlite --no-embedding
+```
+
+### 6.2 Generation & Refinement Ablations
+```bash
+# Direct query generation without Intermediate Representation (A1):
+python3 -m crossdb.evaluate --backend sqlite --no-ir
+
+# Disable refinement loop entirely (single turn, A3 Arm C):
+python3 -m crossdb.evaluate --backend sqlite --no-refine
+
+# Force multi-turn refinement unconditionally on all queries (A3 Arm B):
+python3 -m crossdb.evaluate --backend sqlite --ungated
+```
 
 ---
 
