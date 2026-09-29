@@ -49,18 +49,22 @@ All 8 architectural discovery configurations evaluated across all 1,534 BIRD dev
 
 ## 3. End-to-End Generation & Architectural Ablations
 
-Evaluated across the BIRD development benchmark (full $N=1,534$ dev set for structural routing ablations and $N=1,315$ test split for generation baseline sweeps):
+Evaluated across the full official BIRD development benchmark ($N=1,534$):
 
 | Ablation Configuration | Evaluated $N$ | Execution Accuracy (EX) | Execution Crashes | Latency / Query | Architectural Finding |
 |---|---:|---:|---:|---:|---|
 | **Full Pipeline (Shipped Reference)** | 1,534 | **64.67%** (992 / 1,534) | 23 (1.50%) | 23.9s | Canonical multi-candidate compiled baseline |
 | **No Value Catalog (`--no-values`)** | 1,533 | **52.77%** (809 / 1,533) | 215 (14.02%) | 23.5s | Loss of value statistics distorts column-literal alignment (-11.90pp) |
 | **No Knowledge Graph (`--no-kg`)** | 1,533 | **51.34%** (787 / 1,533) | 243 (15.85%) | 23.8s | Schema retrieval starvation drops multi-table join recall (-13.33pp) |
-| **Direct SQL (No IR)** | 1,315 | **44.71%** (588 / 1,315) | 344 (26.16%) | ~3.2s | Open-weight models suffer severe syntax collapse (-19.96pp) |
-| **Single-Candidate Base** | 1,315 | **62.60%** (823 / 1,315) | 3 (0.23%) | 40.7s | Deterministic IR compiler eliminates 99% of crashes (+17.89pp) |
-| **No Refinement Loop** | 1,315 | **63.80%** (839 / 1,315) | 21 (1.60%) | 38.5s | Gated refinement recovers targeted execution failures safely |
-| **Shipped Ensemble (Gated)** | 1,315 | **63.88%** (840 / 1,315) | 3 (0.23%) | 42.1s | Multi-candidate arbitration adds +1.28pp accuracy |
-| **Ungated Refinement** | 1,315 | **63.88%** (840 / 1,315) | 22 (1.67%) | 160.4s | 0.0pp gain; burns 3.85x compute without gating |
+| **No Adaptive Depth (`--no-adaptive`)** | 1,534 | **54.37%** (834 / 1,534) | 284 (18.51%) | 241.3s | Fixed exploration depth limits candidate discovery in complex schemas (-10.30pp) |
+| **Direct SQL (No IR) (`--no-ir`)** | 1,534 | **50.33%** (772 / 1,534) | 388 (25.29%) | 152.7s | Direct SQL generation without structured IR induces severe syntax collapse (-14.34pp) |
+| **No Lexical Overlap (`--no-lexical`)** | 1,534 | **47.26%** (725 / 1,534) | 365 (23.79%) | 198.2s | Disabling lexical matching impedes exact-match table and column identification (-17.41pp) |
+| **No Refinement Loop (`--no-refine`)** | 1,534 | **46.81%** (718 / 1,534) | 355 (23.14%) | 147.7s | Disabling execution feedback prevents recovery from schema and runtime errors (-17.86pp) |
+| **No Multi-Hop (`--no-multi-hop`)** | 1,534 | **46.48%** (713 / 1,534) | 383 (24.97%) | 197.6s | Restricting schema expansion to direct links starves multi-table relational joins (-18.19pp) |
+| **No Dense Embedding (`--no-embedding`)** | 1,534 | **45.57%** (699 / 1,534) | 410 (26.73%) | 196.3s | Dense embedding removal causes catastrophic candidate recall failure (-19.10pp) |
+| **Single-Candidate Base (`--single-candidate`)** | 1,534 | *In Progress* | — | ~100s | Evaluating deterministic single-turn IR compiler without dual arbitration (test split: 62.60%, 823/1,315) |
+| **Compound Knockout (`--no-values --no-multi-hop --no-lexical`)** | 1,534 | *In Progress* | — | ~195s | Joint knockout isolating minimal routing components |
+| **Ungated Refinement (`--ungated`)** | 1,533 | **61.58%** (944 / 1,533) | 30 (1.96%) | 160.4s | Unconditional refinement induces over-correction (-3.09pp vs Shipped) at 3.85x compute |
 
 ---
 
@@ -71,17 +75,25 @@ Comparison against external SOTA systems running on the identical Qwen3.6-27B-FP
 | System | BIRD Dev EX ($N=1,534$) | Latency / Query | Total Benchmark Time | Total Tokens / Query | Efficiency Profile |
 |---|---:|---:|---:|---:|---|
 | **DAIL-SQL** (ICDE'24) | **53.46%** (820 / 1,534) | 2.99s | ~1.3 hours | 1,088 tokens | Fast single-turn baseline |
+| **CHESS** (EMNLP'24) | **54.43%** (835 / 1,534) | 5,595.9s (~93 min) | ~2,384.5 hours | 182,424 tokens | Multi-agent iterative testing & revision |
+| **DIN-SQL** (NeurIPS'23) | **59.71%** (916 / 1,534) | 14.72s | ~6.3 hours | 1,551 tokens | Decomposed In-Context Reasoning |
 | **Ours** (Shipped Pipeline) | **64.67%** (992 / 1,534) | 23.9s | ~10.2 hours | 17,290 tokens | High-throughput compiled pipeline |
+| **MAC-SQL** (COLING'24) | **64.86%** (995 / 1,534) | 30.56s | ~13.0 hours | 1,820 tokens | Multi-Agent Collaborative Refinement |
 | **DeepEye-SQL** (sota fork) | **65.65%** (1,007 / 1,534) | 1,506.5s (~25 min) | ~642.0 hours | 64,264 tokens | Unbounded test-time tree search |
 
-* **vs. DAIL-SQL**: +11.21pp higher execution accuracy (992 vs. 820 queries correct).
-* **vs. DeepEye-SQL**: Within 0.98pp of SOTA (15 queries difference) at **63.0x lower latency** and **3.7x fewer tokens**.
+### Comparative Findings:
+- **vs. DIN-SQL & MAC-SQL**: When provided with verified schema DDL and proper reserved-keyword quoting matching the standards in DAIL-SQL and DeepEye-SQL forks, both pipelines demonstrate strong performance on open-weight Qwen3.6-27B-FP8 with negligible crash rates:
+  - **DIN-SQL** achieves **59.71% EX** (916 / 1,534) with only **0.13% crashes** (2 queries) at **14.72s / query** and **1,551 tokens**.
+  - **MAC-SQL** achieves **64.86% EX** (995 / 1,534) with only **0.39% crashes** (6 queries) at **30.56s / query** and **1,820 tokens**, virtually on par with DeepEye-SQL (64.86% vs 65.65%) while running **49x faster**.
+- **vs. DAIL-SQL**: Our pipeline delivers **+11.21pp higher execution accuracy** (992 vs. 820 queries correct).
+- **vs. CHESS**: Our pipeline delivers **+10.24pp higher execution accuracy** (992 vs. 835 queries correct) at **234.1x lower latency** and **10.6x fewer tokens**.
+- **vs. DeepEye-SQL**: Ours reaches **98.5% of SOTA accuracy** (64.67% vs. 65.65%, a 0.98pp gap / 15 queries) at **63.0x lower latency** and **3.7x fewer tokens**.
 
 ---
 
 ## 5. TEND (Document MongoDB) Benchmark Results ($N=1,210$)
 
-Full development benchmark evaluated on Qwen3.6-27B-FP8 across 11 MongoDB databases:
+Full development benchmark evaluated on Qwen3.6-27B-FP8 across 11 MongoDB databases using the unified CrossDB pipeline:
 
 | Database | Questions (N) | Correct Queries | Official EXC | Official EXF1 | Latency / Query (s) |
 |---|---:|---:|---:|---:|---:|
@@ -100,3 +112,14 @@ Full development benchmark evaluated on Qwen3.6-27B-FP8 across 11 MongoDB databa
 
 * **Schema Discovery Rate**: **99.1%** collection recall.
 * **Dominant Failure Mode**: `value_mismatch` (55.5% of errors caused by nested literal distortions in `$unwind`/`$group`).
+
+---
+
+## 6. TEND Paradigm Comparison (Qwen-27B-FP8)
+
+| Paradigm / Baseline | Strategy Description | Status / Accuracy ($N=1,210$) | Efficiency Profile |
+|---|---|---|---|
+| **Ours (CrossDB TEND)** | Intermediate Representation compilation to MongoDB pipelines | **Validated (32.23% EXC)** | 21.7s / 7,136 tokens |
+| **SAG (Official Reference)** | Schema-as-Data Grounding with execution repair | **Validated (37.36% EXC)** | ~22.0s / 7,136 tokens |
+| **MAC-MQL (Multi-Agent Modular)** | Zero-shot Selector $\to$ Decomposer $\to$ Execution Refiner | **Completed (15.04% EXC)** | 78.7s (28s clean) / 6,765 tokens |
+| **SQL Pivot** | Natural Language $\to$ SQL Sketch $\to$ MQL Pipeline | **Completed (9.50% EXC)** | 0.0691 EXF1 / 429 predictions (771 context overflow) |
