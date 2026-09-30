@@ -62,9 +62,9 @@ Evaluated across the full official BIRD development benchmark ($N=1,534$):
 | **No Refinement Loop (`--no-refine`)** | 1,534 | **46.81%** (718 / 1,534) | 355 (23.14%) | 147.7s | Disabling execution feedback prevents recovery from schema and runtime errors (-17.86pp) |
 | **No Multi-Hop (`--no-multi-hop`)** | 1,534 | **46.48%** (713 / 1,534) | 383 (24.97%) | 197.6s | Restricting schema expansion to direct links starves multi-table relational joins (-18.19pp) |
 | **No Dense Embedding (`--no-embedding`)** | 1,534 | **45.57%** (699 / 1,534) | 410 (26.73%) | 196.3s | Dense embedding removal causes catastrophic candidate recall failure (-19.10pp) |
-| **Single-Candidate Base (`--single-candidate`)** | 1,534 | *In Progress* | — | ~100s | Evaluating deterministic single-turn IR compiler without dual arbitration (test split: 62.60%, 823/1,315) |
-| **Compound Knockout (`--no-values --no-multi-hop --no-lexical`)** | 1,534 | *In Progress* | — | ~195s | Joint knockout isolating minimal routing components |
-| **Ungated Refinement (`--ungated`)** | 1,533 | **61.58%** (944 / 1,533) | 30 (1.96%) | 160.4s | Unconditional refinement induces over-correction (-3.09pp vs Shipped) at 3.85x compute |
+| **Single-Candidate Base (`--single-candidate`)** | 1,534 | **46.94%** (720 / 1,534) | 366 (23.86%) | 188.3s | Disabling dual arbitration causes -17.73pp accuracy loss vs full reference |
+| **Compound Knockout (`--no-values --no-multi-hop --no-lexical`)** | 1,534 | *Aborted* | — | — | Run cancelled to free GPU compute |
+| **Ungated Refinement (`--ungated`)** | 1,534 | *Offloaded* | — | — | Unconditionally forced multi-turn refinement (remote Blackwell RTX 6000 sweep) |
 
 ---
 
