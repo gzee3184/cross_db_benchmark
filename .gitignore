@@ -22,7 +22,7 @@ env/
 htmlcov/
 
 # Evaluation outputs and logs
-results/
+/results/
 logs/
 *.log
 *.partial.json
