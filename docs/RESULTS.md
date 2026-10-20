@@ -94,6 +94,18 @@ Comparison against external SOTA systems running on the identical Qwen3.6-27B-FP
 - **vs. CHESS**: Our pipeline delivers **+10.24pp higher execution accuracy** (992 vs. 835 queries correct) at **234.1x lower latency** and **10.6x fewer tokens**.
 - **vs. DeepEye-SQL**: Ours reaches **98.5% of SOTA accuracy** (64.67% vs. 65.65%, a 0.98pp gap / 15 queries) at **63.0x lower latency** and **3.7x fewer tokens**.
 
+### 4.2 Backbone Model Comparison: Older vs. Newer Qwen on Our Pipeline ($N=1,534$)
+
+Performance of our latest compiled pipeline across open-weight model generations on the full BIRD development benchmark:
+
+| Model Architecture | Parameter Size / Precision | BIRD Dev EX ($N=1,534$) | Execution Crashes | Mean Latency / Query | Generational Delta |
+|---|---|---:|---:|---:|---:|
+| **Older: Qwen2.5-Coder** | 32B (BF16 / SGLang TP=2) | **37.81%** (580 / 1,534) | 99 (6.45%) | 39.97s | Machine 2 validation run |
+| **Newer: Qwen3.6** | 27B (FP8 / Local SGLang) | **64.67%** (992 / 1,534) | 23 (1.50%) | 23.90s | **+26.86pp EX** (1.67x faster) |
+
+- **Difficulty Scaling**: Qwen3.6 achieves **70.59%** on Simple (vs. 40.69% for Qwen2.5-Coder, +29.90pp), **57.11%** on Moderate (vs. 32.33%, +24.78pp), and **51.03%** on Challenging (vs. 37.24%, +13.79pp).
+- **Execution Stability**: Runtime execution exceptions dropped from 6.45% (99 queries) to 1.50% (23 queries), demonstrating substantially stronger schema grounding and relational clause construction.
+
 ---
 
 ## 5. TEND (Document MongoDB) Benchmark Results ($N=1,210$)
