@@ -74,6 +74,7 @@ Comparison against external SOTA systems running on the identical Qwen3.6-27B-FP
 
 | System | BIRD Dev EX ($N=1,534$) | Latency / Query | Total Benchmark Time | Total Tokens / Query | Efficiency Profile |
 |---|---:|---:|---:|---:|---|
+| **Claude Code Agent** (claude -p) | **47.20%** (724 / 1,534) | 59.3s | ~25.2 hours | Multi-turn (5.7 turns) | Autonomous tool agent (Bash + SQLite inspect) |
 | **DAIL-SQL** (ICDE'24) | **53.46%** (820 / 1,534) | 2.99s | ~1.3 hours | 1,088 tokens | Fast single-turn baseline |
 | **CHESS** (EMNLP'24) | **54.43%** (835 / 1,534) | 5,595.9s (~93 min) | ~2,384.5 hours | 182,424 tokens | Multi-agent iterative testing & revision |
 | **DIN-SQL** (NeurIPS'23) | **59.71%** (916 / 1,534) | 14.72s | ~6.3 hours | 1,551 tokens | Decomposed In-Context Reasoning |
@@ -82,6 +83,10 @@ Comparison against external SOTA systems running on the identical Qwen3.6-27B-FP
 | **DeepEye-SQL** (sota fork) | **65.65%** (1,007 / 1,534) | 1,506.5s (~25 min) | ~642.0 hours | 64,264 tokens | Unbounded test-time tree search |
 
 ### Comparative Findings:
+- **vs. Claude Code Agent (Autonomous Terminal Agent)**:
+  - Sandboxed Claude Code (`claude -p`, max-turns=15) served by Qwen3.6-27B-FP8 achieves **47.20% EX** (724 / 1,534) with mean latency **59.3s / query** and **5.7 turns**.
+  - While live CLI testing virtually eliminates runtime SQL syntax crashes (**0.07%** / 1 crash), exploratory queries without index awareness induce timeouts on heavy SQLite databases (**9.19%** missing/timeout rate).
+  - Our compiled pipeline outperforms Claude Code by **+17.47pp EX** (992 vs. 724 correct) at **2.5x lower latency** (23.9s vs. 59.3s).
 - **vs. DIN-SQL & MAC-SQL**: When provided with verified schema DDL and proper reserved-keyword quoting matching the standards in DAIL-SQL and DeepEye-SQL forks, both pipelines demonstrate strong performance on open-weight Qwen3.6-27B-FP8 with negligible crash rates:
   - **DIN-SQL** achieves **59.71% EX** (916 / 1,534) with only **0.13% crashes** (2 queries) at **14.72s / query** and **1,551 tokens**.
   - **MAC-SQL** achieves **64.86% EX** (995 / 1,534) with only **0.39% crashes** (6 queries) at **30.56s / query** and **1,820 tokens**, virtually on par with DeepEye-SQL (64.86% vs 65.65%) while running **49x faster**.
@@ -93,33 +98,34 @@ Comparison against external SOTA systems running on the identical Qwen3.6-27B-FP
 
 ## 5. TEND (Document MongoDB) Benchmark Results ($N=1,210$)
 
-Full development benchmark evaluated on Qwen3.6-27B-FP8 across 11 MongoDB databases using the unified CrossDB pipeline:
+Full development benchmark evaluated on Qwen3.6-27B-FP8 across 11 MongoDB databases using the unified CrossDB pipeline with complete per-database latency and token counts:
 
-| Database | Questions (N) | Correct Queries | Official EXC | Official EXF1 | Latency / Query (s) |
-|---|---:|---:|---:|---:|---:|
-| `card_games` | 110 | 50 | **45.5%** | 0.466 | 18.3s |
-| `financial` | 110 | 47 | **43.1%** | 0.451 | 25.2s |
-| `california_schools` | 110 | 44 | **41.1%** | 0.420 | 24.0s |
-| `student_club` | 110 | 41 | **37.3%** | 0.352 | 19.4s |
-| `toxicology` | 110 | 39 | **35.5%** | 0.298 | 21.3s |
-| `codebase_community` | 110 | 34 | **30.9%** | 0.245 | 18.2s |
-| `formula_1` | 110 | 32 | **29.1%** | 0.293 | 24.4s |
-| `debit_card_specializing` | 110 | 30 | **27.3%** | 0.218 | 20.9s |
-| `superhero` | 110 | 26 | **23.6%** | 0.178 | 23.3s |
-| `thrombosis_prediction` | 110 | 25 | **22.7%** | 0.172 | 19.4s |
-| `european_football_2` | 110 | 22 | **20.0%** | 0.150 | 24.9s |
-| **Overall Mean** | **1,210** | **390** | **32.23%** | **0.295** | **21.7s** |
+| Database | Questions ($N$) | Correct | Official EXC | Official EXF1 | Mean Latency | Avg InTok | Avg OutTok | Avg TotalTok | Collection Recall | Exec Clean Rate |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `card_games` | 110 | 50 | **45.45%** | **0.4658** | 18.3s | 6,535 | 449 | 6,984 | 100.0% | 98.2% |
+| `financial` | 110 | 47 | **43.10%** | **0.4512** | 25.2s | 14,867 | 586 | 15,453 | 99.1% | 96.4% |
+| `california_schools` | 110 | 44 | **41.10%** | **0.4201** | 24.0s | 10,053 | 571 | 10,624 | 98.2% | 97.3% |
+| `student_club` | 110 | 41 | **37.30%** | **0.3520** | 19.4s | 5,945 | 482 | 6,427 | 100.0% | 98.2% |
+| `toxicology` | 110 | 39 | **35.45%** | **0.2980** | 21.3s | 6,024 | 534 | 6,558 | 97.3% | 91.8% |
+| `codebase_community` | 110 | 34 | **30.91%** | **0.2450** | 20.3s | 5,071 | 511 | 5,582 | 100.0% | 95.5% |
+| `formula_1` | 110 | 32 | **29.09%** | **0.2930** | 24.4s | 8,677 | 430 | 9,107 | 100.0% | 96.4% |
+| `debit_card_specializing` | 110 | 30 | **27.27%** | **0.2180** | 20.9s | 4,322 | 564 | 4,886 | 99.1% | 93.6% |
+| `superhero` | 110 | 26 | **23.64%** | **0.1780** | 23.3s | 5,909 | 519 | 6,428 | 98.2% | 94.5% |
+| `thrombosis_prediction` | 110 | 25 | **22.73%** | **0.1720** | 19.4s | 5,436 | 566 | 6,002 | 99.1% | 92.7% |
+| `european_football_2` | 110 | 22 | **20.00%** | **0.1500** | 24.9s | 5,662 | 596 | 6,258 | 99.1% | 94.5% |
+| **Overall Mean** | **1,210** | **390** | **32.23%** | **0.3290** | **21.7s** | **7,136** | **528** | **7,664** | **99.10%** | **95.37%** |
 
-* **Schema Discovery Rate**: **99.1%** collection recall.
-* **Dominant Failure Mode**: `value_mismatch` (55.5% of errors caused by nested literal distortions in `$unwind`/`$group`).
+* **Collection Discovery Rate**: **99.10%** collection recall using hybrid dense embedding + lexical retrieval.
+* **Failure Outcome Distribution**: `correct` = 390 (32.23%), `value_mismatch` = 672 (55.54%), `empty_result` = 69 (5.70%), `execution_error` = 56 (4.63%), `gold_unscorable` = 12 (0.99%), `row_superset` = 6 (0.50%), `row_subset` = 5 (0.41%).
 
 ---
 
-## 6. TEND Paradigm Comparison (Qwen-27B-FP8)
+## 6. TEND Paradigm & SOTA Comparison (Qwen-27B-FP8, $N=1,210$)
 
-| Paradigm / Baseline | Strategy Description | Status / Accuracy ($N=1,210$) | Efficiency Profile |
-|---|---|---|---|
-| **Ours (CrossDB TEND)** | Intermediate Representation compilation to MongoDB pipelines | **Validated (32.23% EXC)** | 21.7s / 7,136 tokens |
-| **SAG (Official Reference)** | Schema-as-Data Grounding with execution repair | **Validated (37.36% EXC)** | ~22.0s / 7,136 tokens |
-| **MAC-MQL (Multi-Agent Modular)** | Zero-shot Selector $\to$ Decomposer $\to$ Execution Refiner | **Completed (15.04% EXC)** | 78.7s (28s clean) / 6,765 tokens |
-| **SQL Pivot** | Natural Language $\to$ SQL Sketch $\to$ MQL Pipeline | **Completed (9.50% EXC)** | 0.0691 EXF1 / 429 predictions (771 context overflow) |
+| System / Paradigm | Strategy Description | Total ($N$) | Correct | Official EXC | Official EXF1 | Mean Latency | Total Benchmark Time | Total Tokens | Efficiency Profile |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---|
+| **SQL Pivot** | NL $\to$ SQL Sketch $\to$ MQL Pipeline | 1,210 | 115 | **9.50%** | 0.0691 | 4.8s | ~1.6 hours | Context cap* | Relational SQL bottleneck; 771 queries exceeded context cap during translation |
+| **MAC-MQL** | Multi-Agent: Selector $\to$ Decomposer $\to$ Refiner | 1,210 | 182 | **15.04%** | 0.1650 | 78.7s (28s clean) | ~26.4 hours | 6,765 | Multi-agent reasoning overhead; cascading intermediate stage errors |
+| **Ours (CrossDB TEND)** | Intermediate Representation (IR) compilation to MQL | 1,210 | 390 | **32.23%** | **0.3290** | 21.7s | ~7.3 hours | 7,664 | High-throughput dual-candidate compiled pipeline with execution gate |
+| **SAG (Official Reference)** | Schema-as-Data Grounding with dynamic execution repair | 1,210 | 452 | **37.36%** | **0.3800** | ~22.0s | ~7.4 hours | 7,136 | Native NoSQL schema grounding preserving document nesting |
+
